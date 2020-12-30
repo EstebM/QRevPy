@@ -5,6 +5,7 @@ import numpy as np
 import struct
 import binascii
 import math
+from MiscLibs.common_functions import nans
 
 
 class RtbRowe(object):
@@ -25,8 +26,6 @@ class RtbRowe(object):
     BYTES_FLOAT = 4                  # Bytes in Float
     NUM_DATASET_HEADER_ELEMENTS = 6     # Number of elements in dataset header
     BAD_VEL = 88.888                    # RTB Bad Velocity
-    # PD0_BAD_VEL = -32768                # PD0 Bad Velocity
-    # PD0_BAD_AMP = 255                   # PD0 Bad Amplitude
 
     def __init__(self, file_path: str):
         """
@@ -73,8 +72,7 @@ class RtbRowe(object):
 
         self.Gps = Gps(num_ens=self.num_ens)
 
-        self.Gps2 = Gps2(num_ens=self.num_ens,
-                         wr2=False)
+        self.Gps2 = Gps2(num_ens=self.num_ens)
 
         # Surface velocity data
         self.Surface = Surface(num_ens=self.num_ens,
@@ -250,11 +248,10 @@ class RtbRowe(object):
 
         return num_elements, element_multiplier
 
-    def rtb_read(self, file_path: str, wr2: bool = False):
+    def rtb_read(self, file_path: str):
         """
         Reads the binary RTB file and assigns values to object instance variables.
         :param file_path: Full file path
-        :param wr2: Determines if WR2 processing should be applied to GPS data
 
         """
 
@@ -490,7 +487,6 @@ class RtbRowe(object):
             if "E000005" in name:
                 logging.debug(name)
 
-                # Get code repeats for accurate conversion for PD0
                 num_repeats = None
                 if (len(self.Cfg.wp_repeat_n) > self.ens_index-1 > 0 and
                         not np.isnan(self.Cfg.wp_repeat_n[self.ens_index-1])):
@@ -838,14 +834,16 @@ class RtbRowe(object):
             return 0.0
 
     @staticmethod
-    def nans(num_ens: int, dtype=float):
+    # def nans(num_ens: int, dtype=float):
+    def nans(shape, dtype=float):
         """
-        Create a numpy array filled with NaN based on the number of
-        ensembles given.
-        @param num_ens: Number of ensembles
+        Create a numpy array filled with NaN
+        @param shape: tuple
+            Shape of array to be filled with nans
         @param dtype: Data Type
+            Type of array
         """
-        empty_arr = np.empty(num_ens, dtype=dtype)
+        empty_arr = np.empty(shape, dtype=dtype)
         empty_arr.fill(np.nan)
         return empty_arr
 
@@ -859,18 +857,20 @@ class Wt:
     """
     def __init__(self, num_beams: int, num_bins: int, num_ens: int):
         """
-        :param num_bins Number of bins/cells.
         :param num_beams Number of beams on the system.  Not including vertical beam
+        :param num_bins Number of bins/cells.
         :param num_ens Number of ensembles in file.
         """
-        self.corr = RtbRowe.nans([num_beams, num_bins, num_ens])            # Correlation in counts
-        self.pergd = RtbRowe.nans([num_beams, num_bins, num_ens])           # Percent Good in percentage
-        self.rssi = RtbRowe.nans([num_beams, num_bins, num_ens])            # RSSI/Amplitude in dB
-        self.vel_mps = RtbRowe.nans([num_beams, num_bins, num_ens])         # Beam Velocity in m/s.
+        self.corr = nans([num_beams, num_bins, num_ens])            # Correlation in fraction
+        self.pergd = nans([num_beams, num_bins, num_ens])           # Percent Good in percentage
+        self.rssi = nans([num_beams, num_bins, num_ens])            # RSSI/Amplitude in dB
+        self.vel_beam_mps = nans([num_beams, num_bins, num_ens])    # Beam Velocity in m/s.
 
-        self.vel_earth_mps = RtbRowe.nans([num_beams, num_bins, num_ens])   # Earth Velocity in m/s
-        self.pergd_earth = RtbRowe.nans([num_beams, num_bins, num_ens])     # Percent Good in Earth data
-        self.vel_instr_mps = RtbRowe.nans([num_beams, num_bins, num_ens])   # Instrument Velocity in m/s
+        self.vel_mps = nans([num_beams, num_bins, num_ens])         # Velocity in m/s for Qrev use
+
+        self.vel_earth_mps = nans([num_beams, num_bins, num_ens])   # Earth Velocity in m/s
+        self.pergd_earth = nans([num_beams, num_bins, num_ens])     # Percent Good in Earth data
+        self.vel_instr_mps = nans([num_beams, num_bins, num_ens])   # Instrument Velocity in m/s
 
     def decode_vel(self, ens_bytes: list, ens_index: int, num_elements:
                    int, element_multiplier: int, name_len: int = 8):
@@ -878,14 +878,8 @@ class Wt:
         Decode the ensemble data for the Beam velocity.
 
         Initialize the list of velocity data.  [beam][bin]
-
-        If PD0 format is selected, then change the beam order and scale to match PD0.
-        RTB BEAM 0,1,2,3 = PD0 BEAM 3,2,0,1
-
         RTB is m/s
-        PD0 is mm/s
         RTB Bad Value is 88.888
-        PD0 Bad Value is -32768
 
         :param ens_bytes: Byte array containing the ensemble data.
         :param ens_index: Ensemble Index.
@@ -908,11 +902,7 @@ class Wt:
                 # Move the pointer
                 packet_pointer += RtbRowe.BYTES_FLOAT
 
-        # Reshape the data from [beam, bin] to [bin, beam]
-        # vel = np.reshape(vel, [num_elements, element_multiplier])
-        # Add the data the numpy array [:num_beams, :num_bins, ens_index]
-        # self.vel_mps[:element_multiplier, :num_elements, ens_index] = vel.T
-        self.vel_mps[:element_multiplier, :num_elements, ens_index] = vel
+        self.vel_beam_mps[:element_multiplier, :num_elements, ens_index] = vel
 
     def decode_rssi(self, ens_bytes: list, ens_index: int, num_elements: int, element_multiplier:
                     int, name_len: int = 8):
@@ -966,10 +956,6 @@ class Wt:
                 # Move the pointer
                 packet_pointer += RtbRowe.BYTES_FLOAT
 
-        # Reshape the data from [beam, bin] to [bin, beam]
-        # corr = np.reshape(corr, [num_elements, element_multiplier])
-        # Add the data the numpy array [:num_beams, :num_bins, ens_index]
-        # self.corr[:element_multiplier, :num_elements, ens_index] = corr.T
         self.corr[:element_multiplier, :num_elements, ens_index] = corr
 
     def decode_pgb(self, ens_bytes: list, ens_index: int, num_elements: int, element_multiplier: int,
@@ -990,7 +976,7 @@ class Wt:
         :param element_multiplier: Number of beams.
         :param num_elements; Number of bins.
         :param name_len: Length of the name of the dataset.
-        :param pings_per_ens: Only used when converting to PD0 format.  Number of pings in the ensemble
+        :param pings_per_ens: Number of pings in the ensemble
         """
         # Determine where to start in the ensemble data
         packet_pointer = RtbRowe.get_base_data_size(name_len)
@@ -1006,10 +992,6 @@ class Wt:
                 # Move the pointer
                 packet_pointer += RtbRowe.BYTES_INT32
 
-        # Reshape the data from [beam, bin] to [bin, beam]
-        # pings = np.reshape(pings, [num_elements, element_multiplier])
-        # Add the data the numpy array [:num_beams, :num_bins, ens_index]
-        # self.pergd[:element_multiplier, :num_elements, ens_index] = pings.T
         self.pergd[:element_multiplier, :num_elements, ens_index] = pings
 
     def decode_earth_vel(self, ens_bytes: list, ens_index: int, num_elements: int, element_multiplier: int,
@@ -1039,11 +1021,6 @@ class Wt:
                 # Move the pointer
                 packet_pointer += RtbRowe.BYTES_FLOAT
 
-        # Reshape the data from [beam, bin] to [bin, beam]
-        # vel = np.reshape(vel, [num_elements, element_multiplier])
-        # Add the data the numpy array [:num_beams, :num_bins, ens_index]
-        # self.vel_earth_mps[:element_multiplier, :num_elements, ens_index] = vel.T
-        # self.vel_mps[:element_multiplier, :num_elements, ens_index] = vel.T
         self.vel_earth_mps[:element_multiplier, :num_elements, ens_index] = vel
         self.vel_mps[:element_multiplier, :num_elements, ens_index] = vel
 
@@ -1059,7 +1036,7 @@ class Wt:
         :param element_multiplier: Number of beams.
         :param num_elements; Number of bins.
         :param name_len: Length of the name of the dataset.
-        :param pings_per_ens: Only used when converting to PD0 format.  Number of pings in the ensemble
+        :param pings_per_ens: Number of pings in the ensemble
         """
         # Determine where to start in the ensemble data
         packet_pointer = RtbRowe.get_base_data_size(name_len)
@@ -1088,9 +1065,6 @@ class Wt:
         Decode the ensemble data for the Instrument velocity.
 
         Initialize the list of velocity data.  [beam][bin]
-
-        If PD0 format is selected, then change the beam order and scale to match PD0.
-        RTB BEAM 0,1,2,3 = PD0 XYZ order 1,0,-2,3
 
         :param ens_bytes: Byte array containing the ensemble data.
         :param ens_index: Ensemble index in the file.
@@ -1234,25 +1208,21 @@ class Cfg:
     This includes the bin size, blank and number of bins, the ensemble number, date and time.
     """
 
-    def __init__(self, num_ens: int, pd0_format: bool = False):
+    def __init__(self, num_ens: int):
         """
         Initialize all the values
-        Set the flag if using PD0 format data.  This will change the year from 2000+ date to year-2000
 
         :param num_ens: Number of ensembles.
-        :param pd0_format: Set flag if the data should be decoded in PD0 format.
+
         """
-        self.pd0_format = pd0_format
 
         self.ens_num = RtbRowe.nans(num_ens)                    # Ensemble number
-        # self.num_bins = RtbRowe.nans(num_ens)                  # Replaced with wn Number of bins
+        # self.num_bins = RtbRowe.nans(num_ens)                 # Replaced with wn Number of bins
         self.desired_ping_count = RtbRowe.nans(num_ens)         # Avg Ping Count configured in seconds
-        # self.actual_ping_count = RtbRowe.nans(num_ens)         # Replaced with wp. Avg Ping Count actually
+        # self.actual_ping_count = RtbRowe.nans(num_ens)        # Replaced with wp. Avg Ping Count actually
         # output in seconds
-        self.serial_num = RtbRowe.nans(num_ens, dtype=str)                 # Serial Number
-
-        self.subsystem_code = RtbRowe.nans(num_ens, dtype=str)             # Subsystem Code (Identifier of frequency
-        # and orientation)
+        self.serial_num_index = np.empty(num_ens, dtype=str)          # Serial Number Index
+        self.subsystem_code = np.empty(num_ens, dtype=str)      # SubsystemCode(Identifier of frequency and orientation)
         self.subsystem_config = RtbRowe.nans(num_ens)           # Subsystem Config.  System allows multiple configures
         # of the same frequency.  This identifies each configuration
         self.status = RtbRowe.nans(num_ens)                     # Status code
@@ -1388,9 +1358,9 @@ class Cfg:
         # self.hsec[ens_index] = RtbRowe.get_int32(packet_pointer + RtbRowe.BYTES_INT32 * 12, RtbRowe.BYTES_INT32,
         # ens_bytes)
 
-        self.serial_num[ens_index] = str(ens_bytes[packet_pointer +
-                                                   RtbRowe.BYTES_INT32 * 13:packet_pointer +
-                                                   RtbRowe.BYTES_INT32 * 21], "UTF-8")
+        self.serial_num_index[ens_index] = str(ens_bytes[packet_pointer +
+                                               RtbRowe.BYTES_INT32 * 13:packet_pointer +
+                                               RtbRowe.BYTES_INT32 * 21], "UTF-8")
         self.subsystem_code[ens_index] = str(ens_bytes[packet_pointer +
                                                        RtbRowe.BYTES_INT32 * 21 + 3:packet_pointer +
                                                        RtbRowe.BYTES_INT32 * 21 + 4], "UTF-8")
@@ -1400,8 +1370,7 @@ class Cfg:
 
         # With our data format, Beam, Instrument and Earth
         # Are always available.  The Data stored in vel_mps
-        # will always be Beam data.
-        # self.coord_sys[ens_index] = 'Beam'
+        # will always be Earth data.
         self.coord_sys[ens_index] = 'Earth'
 
     def decode_ancillary_data(self, ens_bytes: list, ens_index: int, name_len: int = 8):
@@ -1472,16 +1441,10 @@ class Cfg:
         # Options: 'Manual ET', 'Int. Sensor', 'N/a'
         self.temp_src = 'Int. Sensor'
 
-        if self.pd0_format:
-            salinity = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 9, RtbRowe.BYTES_FLOAT, ens_bytes)
-            sos = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 12, RtbRowe.BYTES_FLOAT, ens_bytes)
-            self.salinity[ens_index] = round(salinity)
-            self.speed_of_sound[ens_index] = round(sos)
-        else:
-            self.salinity[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 9, RtbRowe.BYTES_FLOAT,
-                                                         ens_bytes)
-            self.speed_of_sound[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 12,
-                                                               RtbRowe.BYTES_FLOAT, ens_bytes)
+        self.salinity[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 9, RtbRowe.BYTES_FLOAT,
+                                                     ens_bytes)
+        self.speed_of_sound[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 12,
+                                                           RtbRowe.BYTES_FLOAT, ens_bytes)
 
     def decode_ancillary_adcp3_data(self, ens_bytes: list, ens_index: int, name_len: int = 8):
         """
@@ -1612,7 +1575,7 @@ class Sensor:
     temperature sensor.
     """
 
-    def __init__(self, num_ens: int, pd0_format: bool = False):
+    def __init__(self, num_ens: int):
         """
         Initialize all the values
 
@@ -1620,10 +1583,8 @@ class Sensor:
         of the roll value.
 
         :param num_ens: Number of ensembles in the file.
-        :param pd0_format: Set flag if the data should be decoded in PD0 format.
-        """
-        self.pd0_format = pd0_format
 
+        """
         self.voltage = RtbRowe.nans(num_ens)                            # Voltage input to ADCP
         self.transmit_boost_neg_volt = RtbRowe.nans(num_ens)            # Transmitter Boost Negative Voltage
         self.raw_mag_field_strength = RtbRowe.nans(num_ens)             # Raw magnetic field strength (uT) (micro Tesla)
@@ -1791,26 +1752,12 @@ class Sensor:
         self.vertical_gravity_vec[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 18,
                                                                  RtbRowe.BYTES_FLOAT, ens_bytes)
 
-        # Convert values to PD0 format if selected
-        if self.pd0_format:
-            roll = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 6, RtbRowe.BYTES_FLOAT, ens_bytes)
-            if roll > 90.0:
-                self.roll_deg[ens_index] = -1 * (180.0 - roll)
-            elif roll < -90.0:
-                self.roll_deg[ens_index] = 180.0 + roll
-
-            pressure = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 10, RtbRowe.BYTES_FLOAT, ens_bytes)
-            transducer_depth = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 11,
-                                                 RtbRowe.BYTES_FLOAT, ens_bytes)
-            self.pressure_pascal[ens_index] = pressure * 0.0001
-            self.xdcr_depth_dm[ens_index] = transducer_depth * 10.0
-        else:
-            self.roll_deg[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 6,
-                                                         RtbRowe.BYTES_FLOAT, ens_bytes)
-            self.pressure_pascal[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 10,
-                                                                RtbRowe.BYTES_FLOAT, ens_bytes)
-            self.xdcr_depth_dm[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 11,
-                                                              RtbRowe.BYTES_FLOAT, ens_bytes)
+        self.roll_deg[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 6,
+                                                     RtbRowe.BYTES_FLOAT, ens_bytes)
+        self.pressure_pascal[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 10,
+                                                            RtbRowe.BYTES_FLOAT, ens_bytes)
+        self.xdcr_depth_dm[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 11,
+                                                          RtbRowe.BYTES_FLOAT, ens_bytes)
 
     def decode_ancillary_adcp3_data(self, ens_bytes: list, ens_index: int, name_len: int = 8):
         """
@@ -1864,26 +1811,12 @@ class Sensor:
         self.bt_salinity[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 7,
                                                         RtbRowe.BYTES_FLOAT, ens_bytes)
 
-        # Convert values to PD0 format if selected
-        if self.pd0_format:
-            bt_roll = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 4, RtbRowe.BYTES_FLOAT, ens_bytes)
-            if bt_roll > 90.0:
-                self.bt_roll[ens_index] = -1 * (180.0 - bt_roll)
-            elif bt_roll < -90.0:
-                self.bt_roll[ens_index] = 180.0 + bt_roll
-
-            bt_pressure = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 8, RtbRowe.BYTES_FLOAT, ens_bytes)
-            bt_transducer_depth = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 9,
+        self.bt_roll[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 4,
                                                     RtbRowe.BYTES_FLOAT, ens_bytes)
-            self.bt_pressure[ens_index] = round(bt_pressure * 0.0001)
-            self.bt_transducer_depth[ens_index] = round(bt_transducer_depth * 10.0)
-        else:
-            self.bt_roll[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 4,
+        self.bt_pressure[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 8,
                                                         RtbRowe.BYTES_FLOAT, ens_bytes)
-            self.bt_pressure[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 8,
-                                                            RtbRowe.BYTES_FLOAT, ens_bytes)
-            self.bt_transducer_depth[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 9,
-                                                                    RtbRowe.BYTES_FLOAT, ens_bytes)
+        self.bt_transducer_depth[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 9,
+                                                                RtbRowe.BYTES_FLOAT, ens_bytes)
 
     def decode_bottom_track_adcp3_data(self, ens_bytes: list, ens_index: int, name_len: int = 8):
         """
@@ -1950,7 +1883,7 @@ class BT:
     """
     Bottom Tracking used to measure the depth and vessel speed (Speed over Ground).
     """
-    def __init__(self, num_ens: int, num_beams: int, pd0_format: bool = False):
+    def __init__(self, num_ens: int, num_beams: int):
         """
         Set the flag if using PD0 format data.
         If using PD0 format, then the beams will be rearranged to match PD0 beam order
@@ -1958,7 +1891,7 @@ class BT:
         The value has to be converted from
         :param num_ens: Number of ensembles.
         :param num_beams: Number of velocity beams.
-        :param pd0_format: Set flag if the data should be decoded in PD0 format.
+
         """
         self.num_beams = 0
 
@@ -1979,8 +1912,6 @@ class BT:
         self.pulse_coh_vel = RtbRowe.nans([num_beams, num_ens])
         self.pulse_coh_noise = RtbRowe.nans([num_beams, num_ens])
         self.pulse_coh_corr = RtbRowe.nans([num_beams, num_ens])
-
-        self.pd0_format = pd0_format
 
     def decode(self, ens_bytes: list, ens_index: int, name_len: int = 8):
         """
@@ -2028,36 +1959,8 @@ class BT:
         for beam in range(self.num_beams):
             # Get the value
             value = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * index, RtbRowe.BYTES_FLOAT, ens_bytes)
-
-            if not self.pd0_format:
-                # Store RTB data
-                depth[beam] = value
-            else:
-                # PD0 data
-                # Check for bad velocity and convert
-                if RtbRowe.is_bad_velocity(value):
-                    # value = RtbRowe.PD0_BAD_VEL
-                    # QRev wants bad values set to NaN
-                    value = np.nan
-                # else:
-                    # Convert from m to cm
-                    # value = round(value * 100.0)
-                    # QRev uses meters not cm
-                    # value = round(value)
-
-                # Reorganize beams
-                # RTB BEAM 0,1,2,3 = PD0 BEAM 3,2,0,1
-                if self.num_beams == 1:
-                    depth[0] = value
-                if beam == 0:
-                    depth[3] = value
-                elif beam == 1:
-                    depth[2] = value
-                elif beam == 2:
-                    depth[0] = value
-                elif beam == 3:
-                    depth[1] = value
-
+            # Store RTB data
+            depth[beam] = value
             # Increment for the next beam
             index += 1
 
@@ -2465,12 +2368,14 @@ class Gage:
         Decode the ancillary data for the Configuration data.
 
         :param ens_bytes: Byte array containing the ensemble data.
+        :param ens_index: Index into array.
         :param name_len: Length of the name of the dataset.
 
         Parameters
         ----------
+        ens_bytes
         ens_index
-        ens_index
+        name_len
         """
         # Determine where to start in the ensemble data
         packet_pointer = RtbRowe.get_base_data_size(name_len)
@@ -2535,7 +2440,6 @@ class RiverBT:
         to numpy array after data is decoded.
         :param num_ens: Number of ensembles in the file.
         """
-
         self.num_subsystems = RtbRowe.nans(num_ens)                                  # Number of subsystems to decode
         self.ping_count = RtbRowe.nans([num_ens, num_subsystems])                    # Pings averaged
         self.status = RtbRowe.nans([num_ens, num_subsystems])                        # Data status
@@ -2563,16 +2467,15 @@ class RiverBT:
         self.gp = RtbRowe.nans([num_ens, num_subsystems])
         self.gr = RtbRowe.nans([num_ens, num_subsystems])
         self.gz = RtbRowe.nans([num_ens, num_subsystems])
-        self.samples_per_sec = RtbRowe.nans([num_ens, num_subsystems])               # Samples per second
-        self.system_freq_hz = RtbRowe.nans([num_ens, num_subsystems])                # System frequency in Hz
-        self.bt_range = RtbRowe.nans([num_ens, num_subsystems])                      # Bottom Track Range in m
-        self.bt_snr = RtbRowe.nans([num_ens, num_subsystems])                        # Bottom Track SNR in dB
-        self.bt_amp = RtbRowe.nans([num_ens, num_subsystems])                        # Bottom Track Amplitude in dB
-        self.bt_noise_amp_bp = RtbRowe.nans([num_ens, num_subsystems])               # Noise in Amplitude Back Porch
-        self.bt_noise_amp_fp = RtbRowe.nans([num_ens, num_subsystems])               # Noise in Amplitude Front Porch
-        self.bt_corr = RtbRowe.nans([num_ens, num_subsystems])                       # Bottom Track Correlation in
-        # percent
-        self.vel = RtbRowe.nans([num_ens, num_subsystems])                           # Bottom Track Beam Velocity in m/s
+        self.samples_per_sec = RtbRowe.nans([num_ens, num_subsystems])            # Samples per second
+        self.system_freq_hz = RtbRowe.nans([num_ens, num_subsystems])             # System frequency in Hz
+        self.bt_range = RtbRowe.nans([num_ens, num_subsystems])                   # Bottom Track Range in m
+        self.bt_snr = RtbRowe.nans([num_ens, num_subsystems])                     # Bottom Track SNR in dB
+        self.bt_amp = RtbRowe.nans([num_ens, num_subsystems])                     # Bottom Track Amplitude in dB
+        self.bt_noise_amp_bp = RtbRowe.nans([num_ens, num_subsystems])            # Noise in Amplitude Back Porch
+        self.bt_noise_amp_fp = RtbRowe.nans([num_ens, num_subsystems])            # Noise in Amplitude Front Porch
+        self.bt_corr = RtbRowe.nans([num_ens, num_subsystems])                    # Bottom Track Correlation in fraction
+        self.vel = RtbRowe.nans([num_ens, num_subsystems])                        # Bottom Track Beam Velocity in m/s
         self.beam_n = RtbRowe.nans([num_ens, num_subsystems])
 
     def decode_data(self, ens_bytes: list, ens_index: int, name_len: int = 8):
@@ -3331,14 +3234,13 @@ class Gps2(object):
         Velocity in north direction in m/s from VTG for WR
     """
 
-    def __init__(self, num_ens: int, wr2: bool):
+    def __init__(self, num_ens: int):
         """
         Initialize instance variables.
 
         Parameters
         ----------
         :param num_ens: Number of ensembles
-        :param wr2: Setting of whether data is from WR or WR2
         """
 
         self.gga_delta_time = np.full([num_ens, 20], np.nan)
