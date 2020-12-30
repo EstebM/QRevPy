@@ -2793,7 +2793,7 @@ def allocate_rti_transects(rtt: RTTrowe, transect_type: str = 'Q', checked: bool
     # Accumulate the ensemble transect files
     # Cecode the data, then add it to the list
     def add_rtb(file_name):
-        rtb_data.append(RtbRowe(file_name, use_pd0_format=True))
+        rtb_data.append(RtbRowe(file_name))
 
     if multi_threaded:
         # TODO this belongs in the RTB class
@@ -2804,7 +2804,7 @@ def allocate_rti_transects(rtt: RTTrowe, transect_type: str = 'Q', checked: bool
             rtb_threads.append(rtb_thread)
     else:
         for file in valid_files:
-            rtb_data.append(RtbRowe(file, use_pd0_format=True))
+            rtb_data.append(RtbRowe(file))
 
     # Wait for all the threads to complete
     for thrd in rtb_threads:
