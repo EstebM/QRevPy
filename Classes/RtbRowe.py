@@ -230,12 +230,12 @@ class RtbRowe(object):
                 break
 
             # Get the dataset info
-            ds_type = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 0), RtbRowe.BYTES_INT32, ens_bytes)
+            # ds_type = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 0), RtbRowe.BYTES_INT32, ens_bytes)
             num_elements = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 1), RtbRowe.BYTES_INT32, ens_bytes)
             element_multiplier = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 2), RtbRowe.BYTES_INT32,
                                                    ens_bytes)
-            image = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 3), RtbRowe.BYTES_INT32, ens_bytes)
-            name_len = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 4), RtbRowe.BYTES_INT32, ens_bytes)
+            # image = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 3), RtbRowe.BYTES_INT32, ens_bytes)
+            # name_len = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 4), RtbRowe.BYTES_INT32, ens_bytes)
             name = str(ens_bytes[packet_pointer +
                                  (RtbRowe.BYTES_INT32 * 5):packet_pointer + (RtbRowe.BYTES_INT32 * 5) + 8], 'UTF-8')
 
@@ -263,7 +263,7 @@ class RtbRowe(object):
         block_size = 4096
 
         # Get the total file size to keep track of total bytes read and show progress
-        file_size = os.path.getsize(file_path)
+        # file_size = os.path.getsize(file_path)
         bytes_read = 0
 
         # Create a buffer
@@ -275,7 +275,7 @@ class RtbRowe(object):
 
         # Check to ensure file exists
         if os.path.exists(file_path):
-            file_info = os.path.getsize(file_path)
+            # file_info = os.path.getsize(file_path)
 
             with open(file_path, "rb") as f:
                 data = f.read(block_size)  # Read in data
@@ -398,9 +398,9 @@ class RtbRowe(object):
         ens_len = len(ens_bytes)
 
         # Flag if BT data found
-        bt_data_found = False
-        bt_adcp3_data_found = False
-        ancillary_adcp3_found = False
+        # bt_data_found = False
+        # bt_adcp3_data_found = False
+        # ancillary_adcp3_found = False
 
         # Flag if this ensemble is vertical beam ensemble
         is_vert_ens = False
@@ -417,7 +417,7 @@ class RtbRowe(object):
             num_elements = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 1), RtbRowe.BYTES_INT32, ens_bytes)
             element_multiplier = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 2), RtbRowe.BYTES_INT32,
                                                    ens_bytes)
-            image = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 3), RtbRowe.BYTES_INT32, ens_bytes)
+            # image = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 3), RtbRowe.BYTES_INT32, ens_bytes)
             name_len = RtbRowe.get_int32(packet_pointer + (RtbRowe.BYTES_INT32 * 4), RtbRowe.BYTES_INT32, ens_bytes)
             name = str(ens_bytes[packet_pointer
                                  + (RtbRowe.BYTES_INT32 * 5):packet_pointer + (RtbRowe.BYTES_INT32 * 5) + 8], 'UTF-8')
@@ -487,10 +487,10 @@ class RtbRowe(object):
             if "E000005" in name:
                 logging.debug(name)
 
-                num_repeats = None
-                if (len(self.Cfg.wp_repeat_n) > self.ens_index-1 > 0 and
-                        not np.isnan(self.Cfg.wp_repeat_n[self.ens_index-1])):
-                    num_repeats = self.Cfg.wp_repeat_n[self.ens_index-1]
+                # num_repeats = None
+                # if (len(self.Cfg.wp_repeat_n) > self.ens_index-1 > 0 and
+                #         not np.isnan(self.Cfg.wp_repeat_n[self.ens_index-1])):
+                #    num_repeats = self.Cfg.wp_repeat_n[self.ens_index-1]
 
                 # Check for vertical beam data
                 if element_multiplier < 2:
@@ -501,7 +501,7 @@ class RtbRowe(object):
                                         ens_index=self.ens_index,
                                         num_elements=num_elements,
                                         element_multiplier=element_multiplier,
-                                        num_repeats=num_repeats,
+                                        # num_repeats=num_repeats,
                                         name_len=name_len)
 
             # Good Beam
@@ -509,9 +509,9 @@ class RtbRowe(object):
                 logging.debug(name)
 
                 # Get the number of pings used in the ensemble
-                pings_per_ens = 1
-                if len(self.Cfg.wp) > self.ens_index-1 > 0 and not np.isnan(self.Cfg.wp[self.ens_index-1]):
-                    pings_per_ens = self.Cfg.wp[self.ens_index-1]
+                # pings_per_ens = 1
+                # if len(self.Cfg.wp) > self.ens_index-1 > 0 and not np.isnan(self.Cfg.wp[self.ens_index-1]):
+                #    pings_per_ens = self.Cfg.wp[self.ens_index-1]
 
                 # Check if vertical beam data
                 if element_multiplier < 2:
@@ -522,7 +522,7 @@ class RtbRowe(object):
                                        ens_index=self.ens_index,
                                        num_elements=num_elements,
                                        element_multiplier=element_multiplier,
-                                       pings_per_ens=pings_per_ens,
+                                       # pings_per_ens=pings_per_ens,
                                        name_len=name_len)
 
             # Good Earth
@@ -530,9 +530,9 @@ class RtbRowe(object):
                 logging.debug(name)
 
                 # Get the number of pings used in the ensemble
-                pings_per_ens = 1
-                if len(self.Cfg.wp) > self.ens_index-1 > 0 and not np.isnan(self.Cfg.wp[self.ens_index-1]):
-                    pings_per_ens = self.Cfg.wp[self.ens_index-1]
+                # pings_per_ens = 1
+                # if len(self.Cfg.wp) > self.ens_index-1 > 0 and not np.isnan(self.Cfg.wp[self.ens_index-1]):
+                #    pings_per_ens = self.Cfg.wp[self.ens_index-1]
 
                 # Test if this ensemble is a vertical beam
                 if element_multiplier < 2:
@@ -543,7 +543,7 @@ class RtbRowe(object):
                                             ens_index=self.ens_index,
                                             num_elements=num_elements,
                                             element_multiplier=element_multiplier,
-                                            pings_per_ens=pings_per_ens,
+                                            # pings_per_ens=pings_per_ens,
                                             name_len=name_len)
 
             # Ensemble Data
@@ -644,12 +644,12 @@ class RtbRowe(object):
 
                     self.Gps2.decode(ens_bytes=ens_bytes[packet_pointer:packet_pointer + data_set_size],
                                      ens_index=self.ens_index,
-                                     num_ens=self.num_ens,
+                                     # num_ens=self.num_ens,
                                      name_len=name_len)
 
                     self.Gps.decode(ens_bytes=ens_bytes[packet_pointer:packet_pointer + data_set_size],
                                     ens_index=self.ens_index,
-                                    num_ens=self.num_ens,
+                                    # num_ens=self.num_ens,
                                     name_len=name_len)
 
             # System Setup
@@ -939,7 +939,7 @@ class Wt:
         self.rssi[:element_multiplier, :num_elements, ens_index] = amp
 
     def decode_corr(self, ens_bytes: list, ens_index: int, num_elements: int, element_multiplier: int,
-                    name_len: int = 8, num_repeats: int = None):
+                    name_len: int = 8):
 
         # Determine where to start in the ensemble data
         packet_pointer = RtbRowe.get_base_data_size(name_len)
@@ -959,7 +959,7 @@ class Wt:
         self.corr[:element_multiplier, :num_elements, ens_index] = corr
 
     def decode_pgb(self, ens_bytes: list, ens_index: int, num_elements: int, element_multiplier: int,
-                   name_len: int = 8, pings_per_ens: int = 1):
+                   name_len: int = 8):  # , pings_per_ens: int = 1):
         """
         Decode the ensemble data for the Good Beam Ping data.
 
@@ -976,7 +976,7 @@ class Wt:
         :param element_multiplier: Number of beams.
         :param num_elements; Number of bins.
         :param name_len: Length of the name of the dataset.
-        :param pings_per_ens: Number of pings in the ensemble
+        # :param pings_per_ens: Number of pings in the ensemble
         """
         # Determine where to start in the ensemble data
         packet_pointer = RtbRowe.get_base_data_size(name_len)
@@ -1025,7 +1025,7 @@ class Wt:
         self.vel_mps[:element_multiplier, :num_elements, ens_index] = vel
 
     def decode_pg_earth(self, ens_bytes: list, ens_index: int, num_elements: int, element_multiplier: int,
-                        name_len: int = 8, pings_per_ens: int = 1):
+                        name_len: int = 8):  # , pings_per_ens: int = 1):
         """
         Decode the ensemble data for the Good Earth Ping data.
 
@@ -1036,7 +1036,7 @@ class Wt:
         :param element_multiplier: Number of beams.
         :param num_elements; Number of bins.
         :param name_len: Length of the name of the dataset.
-        :param pings_per_ens: Number of pings in the ensemble
+        # :param pings_per_ens: Number of pings in the ensemble
         """
         # Determine where to start in the ensemble data
         packet_pointer = RtbRowe.get_base_data_size(name_len)
@@ -1223,7 +1223,7 @@ class Cfg:
         # output in seconds
         # self.serial_num_index = RtbRowe.nans(num_ens)  # np.empty(num_ens, dtype=str)          # Serial Number Index
         # self.serial_num_index = RtbRowe.nans(num_ens, dtype=str)
-        # self.subsystem_code = RtbRowe.nans(num_ens, dtype=str)  # SubsystemCode(Identifier of frequency and orientation)
+        # self.subsystem_code = RtbRowe.nans(num_ens, dtype=str)# SubsystemCode(Identifier of frequency and orientation)
         # self.subsystem_config = RtbRowe.nans(num_ens)           # Subsystem Config.  System allows multiple configures
         # of the same frequency.  This identifies each configuration
         self.status = RtbRowe.nans(num_ens)                     # Status code
@@ -1534,14 +1534,14 @@ class Cfg:
 
         # Calculate lag length
         # and Xmit Pulse Length
-        sample_rate = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 5, RtbRowe.BYTES_FLOAT, ens_bytes)
-        lag_samples = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 10, RtbRowe.BYTES_FLOAT, ens_bytes)
+        # sample_rate = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 5, RtbRowe.BYTES_FLOAT, ens_bytes)
+        # lag_samples = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 10, RtbRowe.BYTES_FLOAT, ens_bytes)
         cpce = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 7, RtbRowe.BYTES_FLOAT, ens_bytes)
         nce = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 8, RtbRowe.BYTES_FLOAT, ens_bytes)
         repeats_n = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 9, RtbRowe.BYTES_FLOAT, ens_bytes)
         sys_freq_hz = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 6, RtbRowe.BYTES_FLOAT, ens_bytes)
-        meters_per_sample = math.cos(math.pi * (beam_angle/180.0)) * speed_of_sound / 2 / sample_rate
-        lag_m = lag_samples * meters_per_sample
+        # meters_per_sample = math.cos(math.pi * (beam_angle/180.0)) * speed_of_sound / 2 / sample_rate
+        # lag_m = lag_samples * meters_per_sample
         meters_per_cycle = math.cos(math.pi * (beam_angle/180.0)) * speed_of_sound / 2 / sys_freq_hz
         xmt_m = cpce * nce * repeats_n * meters_per_cycle
         self.xmit_pulse_cm[ens_index] = xmt_m * 100.0
@@ -1934,8 +1934,8 @@ class BT:
 
         # Get the ping count
         # Value stored in Cfg but needed for conversion to PD0
-        bt_actual_ping_count = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 13,
-                                                 RtbRowe.BYTES_FLOAT, ens_bytes)
+        # bt_actual_ping_count = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 13,
+        #                                         RtbRowe.BYTES_FLOAT, ens_bytes)
 
         # Initialize the array
         snr = np.empty(shape=[self.num_beams])
@@ -3075,13 +3075,14 @@ class Gps(object):
         self.vtg_vel_e_mps = RtbRowe.nans(num_ens)
         self.vtg_vel_n_mps = RtbRowe.nans(num_ens)
 
-    def decode(self, ens_bytes: list, ens_index: int, num_ens: int, name_len: int = 8):
+    # def decode(self, ens_bytes: list, ens_index: int, num_ens: int, name_len: int = 8):
+    def decode(self, ens_bytes: list, ens_index: int, name_len: int = 8):
         """
         Decode the NMEA dataset.  This will be the raw NMEA messages
         from the ADCP containing GPS data.
         :param ens_bytes Bytes for dataset.
         :param ens_index: Ensemble index in the file.
-        :param num_ens:  Number of ensembles in the file.
+        # :param num_ens:  Number of ensembles in the file.
         :param name_len: Name length to get the start location.
         """
         packet_pointer = RtbRowe.get_base_data_size(name_len)
@@ -3308,13 +3309,14 @@ class Gps2(object):
         self.last_hdt_time = np.nan
         self.last_gga_delta_time = None
 
-    def decode(self, ens_bytes: list, ens_index: int, num_ens: int, name_len: int = 8):
+    # def decode(self, ens_bytes: list, ens_index: int, num_ens: int, name_len: int = 8):
+    def decode(self, ens_bytes: list, ens_index: int, name_len: int = 8):
         """
         Decode the NMEA dataset.  This will be the raw NMEA messages
         from the ADCP containing GPS data.
         :param ens_bytes Bytes for dataset.
         :param ens_index: Ensemble index in the file.
-        :param num_ens:  Number of ensembles in the file.
+        # :param num_ens:  Number of ensembles in the file.
         :param name_len: Name length to get the start location.
         """
         # Reset all the index for these new entries
@@ -3349,13 +3351,13 @@ class Gps2(object):
                     self.decode_hdt(nmea_str, ens_index)
                     self.hdt_index += 1
 
-    def decode_nmea(self, nmea_str: str, ens_index: int, num_ens: int):
+    def decode_nmea(self, nmea_str: str, ens_index: int):  # , num_ens: int):
         """
         Verify the NMEA message is by checking the checksum.
         Then add the message to the list and decode each message.
         :param nmea_str NMEA string to decode.
         :param ens_index: Ensemble index in the file.
-        :param num_ens: Number of ensembles in the file.
+        # :param num_ens: Number of ensembles in the file.
         """
 
         gga_list = []
