@@ -1221,9 +1221,10 @@ class Cfg:
         self.desired_ping_count = RtbRowe.nans(num_ens)         # Avg Ping Count configured in seconds
         # self.actual_ping_count = RtbRowe.nans(num_ens)        # Replaced with wp. Avg Ping Count actually
         # output in seconds
-        self.serial_num_index = np.empty(num_ens, dtype=str)          # Serial Number Index
-        self.subsystem_code = np.empty(num_ens, dtype=str)      # SubsystemCode(Identifier of frequency and orientation)
-        self.subsystem_config = RtbRowe.nans(num_ens)           # Subsystem Config.  System allows multiple configures
+        # self.serial_num_index = RtbRowe.nans(num_ens)  # np.empty(num_ens, dtype=str)          # Serial Number Index
+        # self.serial_num_index = RtbRowe.nans(num_ens, dtype=str)
+        # self.subsystem_code = RtbRowe.nans(num_ens, dtype=str)  # SubsystemCode(Identifier of frequency and orientation)
+        # self.subsystem_config = RtbRowe.nans(num_ens)           # Subsystem Config.  System allows multiple configures
         # of the same frequency.  This identifies each configuration
         self.status = RtbRowe.nans(num_ens)                     # Status code
         # self.year = RtbRowe.nans(num_ens)                       # Year
@@ -1358,15 +1359,16 @@ class Cfg:
         # self.hsec[ens_index] = RtbRowe.get_int32(packet_pointer + RtbRowe.BYTES_INT32 * 12, RtbRowe.BYTES_INT32,
         # ens_bytes)
 
-        self.serial_num_index[ens_index] = str(ens_bytes[packet_pointer +
-                                               RtbRowe.BYTES_INT32 * 13:packet_pointer +
-                                               RtbRowe.BYTES_INT32 * 21], "UTF-8")
-        self.subsystem_code[ens_index] = str(ens_bytes[packet_pointer +
-                                                       RtbRowe.BYTES_INT32 * 21 + 3:packet_pointer +
-                                                       RtbRowe.BYTES_INT32 * 21 + 4], "UTF-8")
-        self.subsystem_config[ens_index] = struct.unpack("B", ens_bytes[packet_pointer +
-                                                                        RtbRowe.BYTES_INT32 * 22 + 3:packet_pointer +
-                                                                        RtbRowe.BYTES_INT32 * 22 + 4])[0]
+        # self.serial_num_index[ens_index] = str(
+        #    ens_bytes[packet_pointer + RtbRowe.BYTES_INT32 * 13:packet_pointer + RtbRowe.BYTES_INT32 * 21], "UTF-8")
+
+        # self.subsystem_code[ens_index] = str(ens_bytes[packet_pointer +
+        #                                               RtbRowe.BYTES_INT32 * 21 + 3:
+        #                                               packet_pointer + RtbRowe.BYTES_INT32 * 21 + 4], "UTF-8")
+
+        # self.subsystem_config[ens_index] = struct.unpack("B", ens_bytes[packet_pointer +
+        #                                                                 RtbRowe.BYTES_INT32 * 22 + 3:packet_pointer +
+        #                                                                 RtbRowe.BYTES_INT32 * 22 + 4])[0]
 
         # With our data format, Beam, Instrument and Earth
         # Are always available.  The Data stored in vel_mps
