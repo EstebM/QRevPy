@@ -1408,12 +1408,9 @@ class Cfg:
         # Our system will always perform bin mapping
         self.map_bins = 'Yes'
 
-        # Calculate the Bin 1 Distance for now
-        # TODO Speed of Sound not used in this calculation like documentation states
-        self.dist_bin1_cm[ens_index] = self.wf_cm[ens_index] = (self.ws_cm[ens_index] / 2.0)
+        self.dist_bin1_cm[ens_index] = self.wf_cm[ens_index]
 
-        # TODO Not sure the correct answer here
-        self.use_3beam = 'N/a'
+        self.use_3beam = 'Yes'
 
         # Based on the data, unable to determine
         # which source was used for the Speed of Sound source
