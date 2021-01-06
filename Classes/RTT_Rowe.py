@@ -1,4 +1,4 @@
-import datetime
+# import datetime
 import os
 import json
 import logging
@@ -144,11 +144,11 @@ class RTTtransect(object):
         :param file_name for the transect.
         """
         # Create a transect dict
-        #transect = {
+        # transect = {
         #    'Path': file_path,
         #    'File': file_name,
         #    'Number': index,
-        #}
+        # }
 
         # Add the transect to the file
         self.Files.append(file_name)
@@ -178,7 +178,7 @@ class RTTtransect(object):
         self.Checked = json_dict['Checked']
         self.Files = json_dict['Files']
         self.Notes = json_dict['Notes']
-        #self.field_config = json_dict['field_config']
+        # self.field_config = json_dict['field_config']
         self.active_config = json_dict['active_config']
         self.moving_bed_type = json_dict['moving_bed_type']
 
@@ -485,7 +485,7 @@ class RTTrowe(object):
                 'project': self.project,
                 'site_info': self.site_info,
                 'transects': self.transect_to_json(),
-                #'summary': self.summary,
+                # 'summary': self.summary,
                 'qaqc': self.qaqc,
             }
         }
@@ -521,7 +521,7 @@ class RTTrowe(object):
                 # Store the JSON data
                 self.project = project_json['RTI']['project']
                 self.site_info = project_json['RTI']['site_info']
-                #self.summary = project_json['RTI']['summary']
+                # self.summary = project_json['RTI']['summary']
                 self.qaqc = project_json['RTI']['qaqc']
 
                 # Add all the transects
