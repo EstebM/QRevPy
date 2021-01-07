@@ -463,6 +463,7 @@ class Measurement(object):
         # Create object for pre-measurement tests
         if isinstance(rtt.qaqc, dict) or isinstance(rtt.mbt_transects, list):
             self.qaqc_trdi(rtt)
+        # helpme
 
         # Save comments from rtt file in comments
         self.comments.append('RTT Remarks: ' + rtt.site_info['Remarks'])
@@ -478,6 +479,8 @@ class Measurement(object):
         if type(rtt.site_info['Water_Temperature']) is float:
             self.ext_temp_chk['user'] = rtt.site_info['Water_Temperature']
             self.ext_temp_chk['units'] = 'C'
+            self.ext_temp_chk['user_orig'] = rtt.site_info['Water_Temperature']
+            # self.ext_temp_chk['adcp_orig'] = rtt.site_info['Water_Temperature']
 
         # Initialize thresholds settings dictionary
         threshold_settings = dict()
