@@ -1018,11 +1018,14 @@ class Wt:
         for beam in range(element_multiplier):
             for bin_num in range(num_elements):
                 vel[beam][bin_num] = RtbRowe.get_float(packet_pointer, RtbRowe.BYTES_FLOAT, ens_bytes)
+
                 # Move the pointer
                 packet_pointer += RtbRowe.BYTES_FLOAT
 
+
         self.vel_earth_mps[:element_multiplier, :num_elements, ens_index] = vel
         self.vel_mps[:element_multiplier, :num_elements, ens_index] = vel
+        self.vel_mps[self.vel_mps > 80] = np.nan
 
     def decode_pg_earth(self, ens_bytes: list, ens_index: int, num_elements: int, element_multiplier: int,
                         name_len: int = 8):  # , pings_per_ens: int = 1):
@@ -1753,6 +1756,11 @@ class Sensor:
 
         self.roll_deg[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 6,
                                                      RtbRowe.BYTES_FLOAT, ens_bytes)
+        if abs( self.roll_deg[ens_index]) > 90.0:
+            self.roll_deg[ens_index] = 180.0 - self.roll_deg[ens_index]
+            if self.roll_deg[ens_index] > 180.0:
+                self.roll_deg[ens_index] = self.roll_deg[ens_index] - 360
+
         self.pressure_pascal[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 10,
                                                             RtbRowe.BYTES_FLOAT, ens_bytes)
         self.xdcr_depth_dm[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 11,
@@ -1812,6 +1820,11 @@ class Sensor:
 
         self.bt_roll[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 4,
                                                     RtbRowe.BYTES_FLOAT, ens_bytes)
+        if abs( self.bt_roll[ens_index]) > 90.0:
+            self.bt_roll[ens_index] = 180.0 - self.bt_roll[ens_index]
+            if self.bt_roll[ens_index] > 180.0:
+                self.bt_roll[ens_index] = self.bt_roll[ens_index] - 360
+
         self.bt_pressure[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 8,
                                                         RtbRowe.BYTES_FLOAT, ens_bytes)
         self.bt_transducer_depth[ens_index] = RtbRowe.get_float(packet_pointer + RtbRowe.BYTES_FLOAT * 9,
